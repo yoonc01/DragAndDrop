@@ -1,3 +1,18 @@
+// autobind decorator
+// target과 methodName를 사용하지 않으므로 _, _2로 선언해도 된다.
+const autobind = (_: any, _2: string, descriptor: PropertyDescriptor) => {
+    const originalMethod = descriptor.value;
+    const adjDescriptor = {
+        configurable: true,
+        get() {
+            const boundFn = originalMethod.bind(this);
+            return boundFn;
+        }
+    };
+    return adjDescriptor;
+}
+
+
 class ProjectInput {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
@@ -32,6 +47,7 @@ class ProjectInput {
         this.attach();
     }
 
+    @autobind
     private submitHandler(event: Event) {
         event.preventDefault();
         console.log(this.titleInputElement.value);
@@ -39,7 +55,7 @@ class ProjectInput {
 
     private configure() {
         // binding을 하지 않으면 콜백함수를 호출하는 친구는 this.element이기에 submitHandler의 this는 this.element가 된다.
-        this.element.addEventListener("submit", this.submitHandler.bind(this));
+        this.element.addEventListener("submit", this.submitHandler);
     }
 
     private attach() {

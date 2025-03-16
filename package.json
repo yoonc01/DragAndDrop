@@ -1,0 +1,26 @@
+{
+  "devDependencies": {
+    "lite-server": "^2.6.1",
+    "typescript": "^5.8.2"
+  },
+  "name": "draganddrop",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "lite-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yoonc01/DragAndDrop.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/yoonc01/DragAndDrop/issues"
+  },
+  "homepage": "https://github.com/yoonc01/DragAndDrop#readme",
+  "description": ""
+}

@@ -1,3 +1,29 @@
+// Validate
+interface Validatable {
+    value: string | number;
+    required?: boolean;
+    minLength?: number;
+    maxLength?: number;
+    minValue?: number;
+    maxValue?: number;
+}
+
+function validate(validatableInput: Validatable) {
+    let isValid = true;
+    if (validatableInput.required)
+        isValid = isValid && validatableInput.toString().trim().length !== 0;
+    if (validatableInput.minLength !== undefined && typeof validatableInput.value == "string")
+        isValid = isValid && validatableInput.value.length >= validatableInput.minLength;
+    if (validatableInput.maxLength !== undefined && typeof validatableInput.value == "string")
+        isValid = isValid && validatableInput.value.length <= validatableInput.maxLength;
+    if (validatableInput.minValue !== undefined && typeof validatableInput.value === "number")
+        isValid = isValid && validatableInput.value > validatableInput.minValue;
+    if (validatableInput.maxValue !== undefined && typeof validatableInput.value === "number")
+        isValid = isValid && validatableInput.value > validatableInput.maxValue;
+    return isValid;
+
+}
+
 // autobind decorator
 // target과 methodName를 사용하지 않으므로 _, _2로 선언해도 된다.
 const autobind = (_: any, _2: string, descriptor: PropertyDescriptor) => {
@@ -47,10 +73,52 @@ class ProjectInput {
         this.attach();
     }
 
+    private getUserInputs(): [string, string, number] | void {
+        const enteredTitle = this.titleInputElement.value;
+        const enteredPeople = this.peopleInputElement.value;
+        const enteredDescription = this.descriptionInputElement.value;
+
+        const titleValidatable: Validatable = {
+            value: enteredTitle,
+            required: true,
+        }
+
+        const descriptionValidatable: Validatable = {
+            value: enteredDescription,
+            required: true,
+            minLength: 5,
+        }
+
+        const peopleValidatable: Validatable = {
+            value: +enteredPeople,
+            required: true,
+            minValue: 1,
+            maxValue: 5,
+        }
+
+        if (!validate(titleValidatable) || !validate(descriptionValidatable) || !validate(peopleValidatable))
+            alert("Invalid input, please try again!");
+        else
+            return [enteredTitle, enteredDescription, +enteredPeople];
+    }
+
+    private clearInputs() {
+        this.titleInputElement.value = "";
+        this.peopleInputElement.value = "";
+        this.descriptionInputElement.value = "";
+    }
+
     @autobind
     private submitHandler(event: Event) {
         event.preventDefault();
-        console.log(this.titleInputElement.value);
+        const userInputs = this.getUserInputs();
+        // 튜플을 js에서 array다!
+        if (Array.isArray(userInputs))
+        {
+            const [title, decsription, people] = userInputs;
+            console.log(title, decsription, people);
+            this.clearInputs();
+        }
     }
 
     private configure() {

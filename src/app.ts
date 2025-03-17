@@ -17,9 +17,9 @@ function validate(validatableInput: Validatable) {
     if (validatableInput.maxLength !== undefined && typeof validatableInput.value == "string")
         isValid = isValid && validatableInput.value.length <= validatableInput.maxLength;
     if (validatableInput.minValue !== undefined && typeof validatableInput.value === "number")
-        isValid = isValid && validatableInput.value > validatableInput.minValue;
+        isValid = isValid && validatableInput.value >= validatableInput.minValue;
     if (validatableInput.maxValue !== undefined && typeof validatableInput.value === "number")
-        isValid = isValid && validatableInput.value > validatableInput.maxValue;
+        isValid = isValid && validatableInput.value <= validatableInput.maxValue;
     return isValid;
 
 }
@@ -138,7 +138,7 @@ class ProjectList {
     element: HTMLElement;
     assignedProjects: Project[];
 
-    constructor(private type: "active" | "finished") {
+    constructor(private type: ProjectStatus) {
         const templateEl = document.getElementById("project-list");
         const hostEl = document.getElementById("app");
         this.assignedProjects = [];
@@ -154,9 +154,11 @@ class ProjectList {
 
         const importedHtmlContent = document.importNode(this.templateElement.content, true);
         this.element = importedHtmlContent.firstElementChild as HTMLElement;
-        this.element.id = `${this.type}-projects`;
+        const status = this.type === ProjectStatus.Active ? "active" : "finished" ;
+        this.element.id = `${status}-projects`;
         projectStateManager.addListener((projects: Project[]) => {
-            this.assignedProjects = projects;
+            const relevantProjects = projects.filter(project => project.status === this.type);
+            this.assignedProjects = relevantProjects;
             this.renderProjects();
         });
         this.attach();
@@ -165,6 +167,7 @@ class ProjectList {
 
     private renderProjects() {
         const listEl = document.getElementById( `${this.type}-projects-list`)! as HTMLUListElement;
+        listEl.innerHTML = "";
         for (const projectItem of this.assignedProjects) {
             const listItem = document.createElement("li");
             listItem.textContent = projectItem.title;
@@ -176,7 +179,8 @@ class ProjectList {
     private renderContent() {
         const listId = `${this.type}-projects-list`;
         this.element.querySelector("ul")!.id = listId;
-        this.element.querySelector("h2")!.textContent = `${this.type.toUpperCase()} PROJECTS`;
+        const status = this.type === ProjectStatus.Active ? "active" : "finished" ;
+        this.element.querySelector("h2")!.textContent = `${status.toUpperCase()} PROJECTS`;
     }
 
     private attach() {
@@ -239,5 +243,5 @@ class ProjectStateManager{
 const projectStateManager = ProjectStateManager.getInstance();
 
 new ProjectInput();
-new ProjectList("active");
-new ProjectList("finished");
+new ProjectList(ProjectStatus.Active);
+new ProjectList(ProjectStatus.Finished);

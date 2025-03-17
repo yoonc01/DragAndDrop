@@ -38,7 +38,7 @@ const autobind = (_: any, _2: string, descriptor: PropertyDescriptor) => {
     return adjDescriptor;
 }
 
-
+// Project Class
 class ProjectInput {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
@@ -131,4 +131,43 @@ class ProjectInput {
     }
 }
 
+// ProjectList Class
+class ProjectList {
+    templateElement: HTMLTemplateElement;
+    hostElement: HTMLDivElement;
+    element: HTMLElement;
+
+    constructor(private type: "active" | "finished") {
+        const templateEl = document.getElementById("project-list");
+        const hostEl = document.getElementById("app");
+
+        if (!templateEl)
+            throw new Error("Could not find project-list element!");
+
+        if (!hostEl)
+            throw new Error("Could not find app element!");
+
+        this.templateElement = templateEl as HTMLTemplateElement;
+        this.hostElement = hostEl as HTMLDivElement;
+
+        const importedHtmlContent = document.importNode(this.templateElement.content, true);
+        this.element = importedHtmlContent.firstElementChild as HTMLElement;
+        this.element.id = `${this.type}-projects`;
+        this.attach();
+        this.renderContent();
+    }
+
+    private renderContent() {
+        const listId = `${this.type}-projects-list`;
+        this.element.querySelector("ul")!.id = listId;
+        this.element.querySelector("h2")!.textContent = `${this.type.toUpperCase()} PROJECTS`;
+    }
+
+    private attach() {
+        this.hostElement.insertAdjacentElement("beforeend", this.element);
+    }
+}
+
 new ProjectInput();
+new ProjectList("active");
+new ProjectList("finished");

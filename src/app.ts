@@ -38,7 +38,7 @@ const autobind = (_: any, _2: string, descriptor: PropertyDescriptor) => {
     return adjDescriptor;
 }
 
-// Project Class
+// ProjectInput Class
 class ProjectInput {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
@@ -115,8 +115,8 @@ class ProjectInput {
         // 튜플을 js에서 array다!
         if (Array.isArray(userInputs))
         {
-            const [title, decsription, people] = userInputs;
-            console.log(title, decsription, people);
+            const [title, description, people] = userInputs;
+            projectStateManager.addProject(title, description, people);
             this.clearInputs();
         }
     }
@@ -136,10 +136,12 @@ class ProjectList {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
     element: HTMLElement;
+    assignedProjects: Project[];
 
     constructor(private type: "active" | "finished") {
         const templateEl = document.getElementById("project-list");
         const hostEl = document.getElementById("app");
+        this.assignedProjects = [];
 
         if (!templateEl)
             throw new Error("Could not find project-list element!");
@@ -153,8 +155,22 @@ class ProjectList {
         const importedHtmlContent = document.importNode(this.templateElement.content, true);
         this.element = importedHtmlContent.firstElementChild as HTMLElement;
         this.element.id = `${this.type}-projects`;
+        projectStateManager.addListener((projects: Project[]) => {
+            this.assignedProjects = projects;
+            this.renderProjects();
+        });
         this.attach();
         this.renderContent();
+    }
+
+    private renderProjects() {
+        const listEl = document.getElementById( `${this.type}-projects-list`)! as HTMLUListElement;
+        for (const projectItem of this.assignedProjects) {
+            const listItem = document.createElement("li");
+            listItem.textContent = projectItem.title;
+            listEl.appendChild(listItem);
+        }
+
     }
 
     private renderContent() {
@@ -167,6 +183,60 @@ class ProjectList {
         this.hostElement.insertAdjacentElement("beforeend", this.element);
     }
 }
+
+enum ProjectStatus {
+    Active,
+    Finished
+}
+
+class Project {
+    private static idCounter: number = 0;
+    id: string;
+    title: string;
+    description: string;
+    people: number;
+    status: ProjectStatus;
+
+    constructor(title: string, description: string, people: number, status: ProjectStatus) {
+        this.id = (Project.idCounter++).toString();
+        this.title = title;
+        this.description = description;
+        this.people = people;
+        this.status = status;
+    }
+}
+
+type Listener = (items: Project[]) => void;
+
+class ProjectStateManager{
+    private listeners: any[] = [];
+    private projects: Project[] = [];
+    private static instance: ProjectStateManager;
+
+    private constructor() {}
+
+    static getInstance() {
+        if (this.instance) {
+            return this.instance;
+        }
+        this.instance = new ProjectStateManager();
+        return this.instance;
+    }
+
+    addListener(listenerFn: Listener) {
+        this.listeners.push(listenerFn);
+    }
+
+    addProject(title: string, description: string, numOfPeople: number) {
+        const newProject = new Project(title, description, numOfPeople, ProjectStatus.Active);
+        this.projects.push(newProject);
+        for (const listenerFn of this.listeners) {
+            listenerFn([...this.projects]);
+        }
+    }
+}
+
+const projectStateManager = ProjectStateManager.getInstance();
 
 new ProjectInput();
 new ProjectList("active");

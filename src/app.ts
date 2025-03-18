@@ -38,19 +38,15 @@ const autobind = (_: any, _2: string, descriptor: PropertyDescriptor) => {
     return adjDescriptor;
 }
 
-// ProjectInput Class
-class ProjectInput {
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
     templateElement: HTMLTemplateElement;
-    hostElement: HTMLDivElement;
-    element: HTMLElement;
-    titleInputElement: HTMLInputElement;
-    descriptionInputElement: HTMLInputElement;
-    peopleInputElement: HTMLInputElement;
+    hostElement: T;
+    element: U;
 
-    constructor() {
+    constructor(templateId: string, hostId: string, elementId: string, insertPosition: InsertPosition) {
         // document에서 검색하므로 getElementById를 통해 검색(document 객체에서 ID를 기준으로 즉시 검색하여 최적화)
-        const templateEl = document.getElementById("project-input");
-        const hostEl = document.getElementById("app");
+        const templateEl = document.getElementById(templateId);
+        const hostEl = document.getElementById(hostId);
 
         if (!templateEl)
             throw new Error("Could not find project-input element!");
@@ -58,11 +54,28 @@ class ProjectInput {
 
         if (!hostEl)
             throw new Error("Could not find app element!");
-        this.hostElement = hostEl as HTMLDivElement;
+        this.hostElement = hostEl as T;
 
         const importedHtmlContent = document.importNode(this.templateElement.content, true);
-        this.element  = importedHtmlContent.firstElementChild as HTMLElement;
-        this.element.id = "user-input";
+        this.element = importedHtmlContent.firstElementChild as U;
+        this.element.id = elementId;
+        this.attach(insertPosition);
+    }
+
+    // "beforebegin" | "afterbegin" | "beforeend" | "afterend" === InsertPosition
+    private attach(insertPosition: InsertPosition) {
+        this.hostElement.insertAdjacentElement(insertPosition, this.element);
+    }
+}
+
+// ProjectInput Class
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
+    titleInputElement: HTMLInputElement;
+    descriptionInputElement: HTMLInputElement;
+    peopleInputElement: HTMLInputElement;
+
+    constructor() {
+        super("project-input", "app", "user-input","afterbegin");
 
         // 범위가 좁혀졌으니 querySelector를 통해 가독성 향상
         this.titleInputElement = this.element.querySelector("#title")! as HTMLInputElement;
@@ -70,7 +83,6 @@ class ProjectInput {
         this.descriptionInputElement = this.element.querySelector("#description")! as HTMLInputElement;
 
         this.configure();
-        this.attach();
     }
 
     private getUserInputs(): [string, string, number] | void {
@@ -121,47 +133,29 @@ class ProjectInput {
         }
     }
 
-    private configure() {
+    configure() {
         // binding을 하지 않으면 콜백함수를 호출하는 친구는 this.element이기에 submitHandler의 this는 this.element가 된다.
         this.element.addEventListener("submit", this.submitHandler);
-    }
-
-    private attach() {
-        this.hostElement.insertAdjacentElement("afterbegin", this.element);
     }
 }
 
 // ProjectList Class
-class ProjectList {
-    templateElement: HTMLTemplateElement;
-    hostElement: HTMLDivElement;
-    element: HTMLElement;
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     assignedProjects: Project[];
+    private type: ProjectStatus;
 
-    constructor(private type: ProjectStatus) {
-        const templateEl = document.getElementById("project-list");
-        const hostEl = document.getElementById("app");
+    constructor(type: ProjectStatus) {
+        const status = type === ProjectStatus.Active ? "active" : "finished";
+        super("project-list", "app", `${status}-projects`, "beforeend");
         this.assignedProjects = [];
+        this.type = type;
 
-        if (!templateEl)
-            throw new Error("Could not find project-list element!");
 
-        if (!hostEl)
-            throw new Error("Could not find app element!");
-
-        this.templateElement = templateEl as HTMLTemplateElement;
-        this.hostElement = hostEl as HTMLDivElement;
-
-        const importedHtmlContent = document.importNode(this.templateElement.content, true);
-        this.element = importedHtmlContent.firstElementChild as HTMLElement;
-        const status = this.type === ProjectStatus.Active ? "active" : "finished" ;
-        this.element.id = `${status}-projects`;
         projectStateManager.addListener((projects: Project[]) => {
             const relevantProjects = projects.filter(project => project.status === this.type);
             this.assignedProjects = relevantProjects;
             this.renderProjects();
         });
-        this.attach();
         this.renderContent();
     }
 
@@ -173,18 +167,13 @@ class ProjectList {
             listItem.textContent = projectItem.title;
             listEl.appendChild(listItem);
         }
-
     }
 
-    private renderContent() {
+    renderContent() {
         const listId = `${this.type}-projects-list`;
         this.element.querySelector("ul")!.id = listId;
         const status = this.type === ProjectStatus.Active ? "active" : "finished" ;
         this.element.querySelector("h2")!.textContent = `${status.toUpperCase()} PROJECTS`;
-    }
-
-    private attach() {
-        this.hostElement.insertAdjacentElement("beforeend", this.element);
     }
 }
 
@@ -210,10 +199,10 @@ class Project {
     }
 }
 
-type Listener = (items: Project[]) => void;
+type Listener<T> = (items: T[]) => void;
 
 class ProjectStateManager{
-    private listeners: any[] = [];
+    private listeners: Listener<Project>[] = [];
     private projects: Project[] = [];
     private static instance: ProjectStateManager;
 
@@ -227,7 +216,7 @@ class ProjectStateManager{
         return this.instance;
     }
 
-    addListener(listenerFn: Listener) {
+    addListener(listenerFn: Listener<Project>) {
         this.listeners.push(listenerFn);
     }
 

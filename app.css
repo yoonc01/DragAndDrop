@@ -91,6 +91,8 @@ button:active {
   box-shadow: 1px 1px 8px rgba(0, 0, 0, 0.26);
   padding: 1rem;
   margin: 1rem;
+  /*li의 background를  주어 drag했을 때 어색하지 않도록 유도*/
+  background-color: white;
 }
 
 .projects li h2 {

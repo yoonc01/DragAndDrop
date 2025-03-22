@@ -1,8 +1,10 @@
 import { Component } from "./base-component.js";
 import { Project } from "../models/project.js";
+import { Draggable } from "../drapAndDrop/drap-and-drop.js";
+import { autobind } from "../util/autobind.js";
 
 // ProjectItem Class
-export class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
+export class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> implements Draggable {
     private project: Project;
 
     get assignedPeople() {
@@ -16,12 +18,14 @@ export class ProjectItem extends Component<HTMLUListElement, HTMLLIElement> {
         super("single-project", hostId, project.id, "beforeend");
         this.project = project;
 
-        this.configure();
+        this.element.addEventListener("dragstart", this.dragStartHandler);
         this.renderContent();
     }
 
-    configure() {
-
+    @autobind
+    dragStartHandler(event: DragEvent): void {
+        event.dataTransfer!.setData("text/plain", this.project.id);
+        event.dataTransfer!.effectAllowed = "move";
     }
 
     renderContent() {
